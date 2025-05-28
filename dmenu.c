@@ -52,7 +52,7 @@ static uint32_t color_prompt_fg = 0xeeeeeeff;
 static uint32_t color_selected_bg = 0x924441ff;
 static uint32_t color_selected_fg = 0xeeeeeeff;
 
-static int32_t line_height = 30;
+static int32_t line_height = 25;
 
 static void appenditem(Item *item, Item **list, Item **last);
 static char *fstrstr(const char *s, const char *sub);
@@ -75,7 +75,7 @@ static int itemcount = 0;
 static int lines = 0;
 static int timeout = 3;
 static size_t cursor = 0;
-static const char *prompt = NULL;
+static const char *prompt = "Choose: ";
 static bool message = false;
 static bool nostdin = false;
 static bool returnearly = false;
@@ -295,14 +295,15 @@ void draw(cairo_t *cairo, int32_t width, int32_t height, int32_t scale) {
 	memset(text_, 0, BUFSIZ);
 
 	if (password) {
-		memset(text_, '*', strlen(text));
+		memset(text_, '*', strlen(text)); // TODO
+        text_[strlen(text)] = '\0';
 	} else {
-		strncpy(text_, text, cursor);
+		strncpy(text_, text,cursor);
 	}
 
 	// draw input
 	// depending on orientation add heigth of input to y
-	draw_text(cairo, width, line_height, text, &x, &y, &bin, 
+	draw_text(cairo, width, line_height, (password) ? text_ : text, &x, &y, &bin, 
 			(lines ? &y : &bin), scale, color_input_fg, 0, 6);
 
 	{
@@ -461,8 +462,9 @@ int main(int argc, char **argv) {
     }
 
 	int32_t panel_height = line_height;
-	if (lines) {
+	if (lines && items!=NULL) {
 		// +1 for input
+        if(itemcount < lines) lines = itemcount;
 	    panel_height *= lines + 1;
 	}
 
