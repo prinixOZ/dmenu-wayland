@@ -43,9 +43,9 @@ struct {
 
 const char *progname;
 
-static uint32_t color_bg = 0x222222ff;
+static uint32_t color_bg = 0x0f0f0fff;
 static uint32_t color_fg = 0xbbbbbbff;
-static uint32_t color_input_bg = 0x222222ff;
+static uint32_t color_input_bg = 0x0f0f0fff;
 static uint32_t color_input_fg = 0xbbbbbbff;
 static uint32_t color_prompt_bg = 0x924441ff;
 static uint32_t color_prompt_fg = 0xeeeeeeff;
@@ -73,6 +73,8 @@ static char text[BUFSIZ];
 static char text_[BUFSIZ];
 static int itemcount = 0;
 static int lines = 0;
+static int gridn = 1;
+int grid_width;
 static int timeout = 3;
 static size_t cursor = 0;
 static const char *prompt = "Choose: ";
@@ -86,10 +88,12 @@ static Item *items = NULL;
 static Item *matches, *sel;
 static Item *prev, *curr, *next;
 static Item *leftmost, *rightmost;
-static char *font = "Hack";
+static char *font = "Hack 11";
+static int font_size = 14;  // default size in pt (adjust as needed)
 
 
-static int (*fstrncmp)(const char *, const char *, size_t) = strncmp;
+
+static int (*fstrncmp)(const char *, const char *, size_t) = strncasecmp;
 
 void insert(const char *s, ssize_t n, struct dmenu_panel* panel) {
 	if(strlen(text) + n > sizeof text - 1) {
@@ -238,6 +242,7 @@ void draw_text(cairo_t *cairo, int32_t width, int32_t height, const char *str,
 				  foreground_color, uint32_t background_color, int32_t padding) {
 
 	int32_t text_width, text_height;
+
 	get_text_size(cairo, font, &text_width, &text_height,
 				  NULL, scale, false, str);
 
@@ -249,7 +254,8 @@ void draw_text(cairo_t *cairo, int32_t width, int32_t height, const char *str,
 	} else {
 		if (background_color) {
 			cairo_set_source_u32(cairo, background_color);
-			cairo_rectangle(cairo, *x, *y, (lines ? width : text_width + 2 * padding) * scale, height * scale);
+			cairo_rectangle(cairo, *x, *y, (lines ? width / gridn : text_width + 2 * padding) * scale, height * scale); // select rectangle here
+            grid_width = (lines ? (width - *x) / gridn : text_width + 2 * padding) * scale;
 			cairo_fill(cairo);
 		}
 
@@ -327,7 +333,7 @@ void draw(cairo_t *cairo, int32_t width, int32_t height, int32_t scale) {
 
 	if (!matches) return;
 	Item *item;
-
+    int max_len = (grid_width - ((gridn == 1) ? 100 : 0)) / (text_width / 2) ;
 	for (item = matches; item; item = item->right) {
 		uint32_t bg_color = sel == item ? color_selected_bg : color_bg;
 		uint32_t fg_color = sel == item ? color_selected_fg : color_fg;
@@ -338,9 +344,11 @@ void draw(cairo_t *cairo, int32_t width, int32_t height, int32_t scale) {
 			draw_text(cairo, width - 20 * scale, line_height, item->text,
 						  &x, &y, &x, &bin, scale, fg_color, bg_color, item_padding);
 		} else {
-            int max_len = 30;
-            char newtext[max_len];
-            truncate_and_ellipsis(item->text,newtext,max_len - 2);
+
+            int w, h;
+            get_text_size(cairo, "Sans Bold 12", &w, &h, NULL, 1.0, false, item->text);
+                char newtext[max_len];
+                truncate_and_ellipsis(item->text,newtext,max_len - 2);
 
 			draw_text(cairo, width * scale, line_height,newtext, 
 						  &x, &y, &bin, &y, scale, fg_color, bg_color, item_padding);
@@ -395,21 +403,25 @@ int main(int argc, char **argv) {
 			message = true, messageposition = CENTRE;
 		else if (!strcmp(argv[i], "-er") || !strcmp(argv[i], "--echo-right"))
 			message = true, messageposition = RIGHT;
-		else if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--insensitive"))
-			fstrncmp = strncasecmp;
+		else if (!strcmp(argv[i], "-i") || !strcmp(argv[i], "--insensitive")){
+			fstrncmp = strncmp;
+        }
 		else if (!strcmp(argv[i], "-r") || !strcmp(argv[i], "--return-early"))
 			returnearly = true;
 		else if (!strcmp(argv[i], "-P"))
 			password = true;
-		else if (i == argc - 1) {
-			usage();
-		}
+		// else if (i == argc - 1) {
+		// 	usage();
+		// }
 		/* opts that need 1 arg */
 		else if (!strcmp(argv[i], "-et") || !strcmp(argv[i], "--echo-timeout"))
 			timeout = atoi(argv[++i]);
 		else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--height"))
 			line_height = atoi(argv[++i]);
-		else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--lines"))
+        else if ( !strcmp(argv[i], "-g") || !strcmp(argv[i], "--grid")){
+            gridn = atoi(argv[++i]);
+        }
+        else if (!strcmp(argv[i], "-l") || !strcmp(argv[i], "--lines"))
 			lines = atoi(argv[++i]);
 		else if (!strcmp(argv[i], "-m") || !strcmp(argv[i], "--monitor")) {
 			++i;
@@ -437,7 +449,9 @@ int main(int argc, char **argv) {
 			prompt = argv[++i], nostdin = true;
 		else if (!strcmp(argv[i], "-fn") || !strcmp(argv[i], "--font-name"))
 			font = argv[++i];
-		else if (!strcmp(argv[i], "-nb") || !strcmp(argv[i], "--normal-background"))
+        else if (!strcmp(argv[i], "-fs") || !strcmp(argv[i], "--font-size"))
+            font_size = atoi(argv[++i]);
+        else if (!strcmp(argv[i], "-nb") || !strcmp(argv[i], "--normal-background"))
 			color_bg = color_input_bg = parse_color(argv[++i]);
 		else if (!strcmp(argv[i], "-nf") || !strcmp(argv[i], "--normal-foreground"))
 			color_fg = color_input_fg = parse_color(argv[++i]);
@@ -448,8 +462,10 @@ int main(int argc, char **argv) {
 				 !strcmp(argv[i], "--selected-foreground"))
 			color_prompt_fg = color_selected_fg = parse_color(argv[++i]);
 		else {
-			usage();
+			 usage();
 		}
+
+
 	}
 
     if (message) {
@@ -632,6 +648,7 @@ void usage(void) {
     printf("  -h,  --height N                   set dmenu to be N pixels high\n");
     printf("  -i,  --insensitive                dmenu matches menu items case insensitively\n");
     printf("  -l,  --lines LINES                dmenu lists items vertically, within the\n");
+    printf("  -g,  --grids N                    dmenu lists items horizontally, within the\n");
     printf("                                      given number of lines\n");
     printf("  -m,  --monitor MONITOR            dmenu appears on the given Xinerama screen\n");
     printf("                                      (does nothing on wayland, supported for)\n");

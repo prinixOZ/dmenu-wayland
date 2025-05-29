@@ -102,6 +102,7 @@ PangoLayout *get_pango_layout(cairo_t *cairo, const char *font,
 
 	pango_attr_list_insert(attrs, pango_attr_scale_new(scale));
 	PangoFontDescription *desc = pango_font_description_from_string(font);
+    //PangoFontDescription *desc = pango_font_description_from_string("Hack 12");
 	pango_layout_set_font_description(layout, desc);
 	pango_layout_set_single_paragraph_mode(layout, 1);
 	pango_layout_set_attributes(layout, attrs);

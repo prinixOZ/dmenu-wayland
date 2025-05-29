@@ -72,11 +72,11 @@ dmenu_deps = [
 
 dmenu_src = ['dmenu.c', 'draw.c'] + protos_src + protos_headers
 
-executable('dmenu-wl', dmenu_src, dependencies: dmenu_deps, install: true)
+executable('dmenu', dmenu_src, dependencies: dmenu_deps, install: true)
 
-executable('dmenu-wl_path', 'dmenu_path.c', install: true)
+executable('dmenu_path', 'dmenu_path.c', install: true)
 
-install_data('dmenu-wl_run', install_dir: get_option('bindir'))
+install_data('dmenu_run', install_dir: get_option('bindir'))
 
-install_man('dmenu-wl.1')
+install_man('dmenu.1')
 

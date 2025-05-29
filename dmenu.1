@@ -1,8 +1,8 @@
-.TH DMENU 1 dmenu-wl\-VERSION
+.TH DMENU 1 dmenu\-VERSION
 .SH NAME
-dmenu-wl \- dynamic menu
+dmenu \- dynamic menu
 .SH SYNOPSIS
-.B dmenu-wl
+.B dmenu
 .RB [ \-b ]
 .RB [ \-i ]
 .RB [ \-l
@@ -23,26 +23,26 @@ dmenu-wl \- dynamic menu
 .IR color ]
 .RB [ \-v ]
 .P
-.BR dmenu-wl_run " ..."
+.BR dmenu_run " ..."
 .P
-.B dmenu-wl_path
+.B dmenu_path
 .SH DESCRIPTION
-.B dmenu-wl
+.B dmenu
 is a dynamic menu for Wayland, originally designed for X and
 .BR dwm (1).
 It manages huge numbers of user-defined menu items efficiently.
 .P
-dmenu-wl reads a list of newline-separated items from standard input and creates a
+dmenu reads a list of newline-separated items from standard input and creates a
 menu (or displays a notification if using -e). When the user selects an item or
 enters any text and presses Return, their choice is printed to standard output
-and dmenu-wl terminates.
+and dmenu terminates.
 .P
-.B dmenu-wl_run
-is a dmenu-wl script used by dwm which lists programs in the user's PATH and
+.B dmenu_run
+is a dmenu script used by dwm which lists programs in the user's PATH and
 executes the selected item.
 .P
-.B dmenu-wl_path
-is a program used by dmenu-wl_run to find and cache a list of executables.
+.B dmenu_path
+is a program used by dmenu_run to find and cache a list of executables.
 .SH OPTIONS
 .B \-e
 dmenu displays text from stdin with no user interaction.
@@ -101,7 +101,7 @@ defines the selected foreground color.
 .B \-v
 prints version information to standard output, then exits.
 .SH USAGE
-dmenu-wl is completely controlled by the keyboard.  Besides standard Unix line
+dmenu is completely controlled by the keyboard.  Besides standard Unix line
 editing and item selection (Up/Down/Left/Right, PageUp/PageDown, Home/End), the
 following keys are recognized:
 .TP
