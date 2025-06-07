@@ -155,7 +155,7 @@ void keypress(struct dmenu_panel *panel, enum wl_keyboard_key_state state,
                    cursor = strlen(text_);
 
                    free(texts);
-                   sym = XKB_KEY_End;
+                   sym = XKB_KEY_NoSymbol;
                }
            }
         break;
