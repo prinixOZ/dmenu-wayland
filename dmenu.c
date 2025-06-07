@@ -54,6 +54,7 @@ static uint32_t color_selected_fg = 0xeeeeeeff;
 
 static int32_t line_height = 25;
 
+char *get_clipboard_text(void);
 static void appenditem(Item *item, Item **list, Item **last);
 static char *fstrstr(const char *s, const char *sub);
 static void insert(const char *s, ssize_t n, struct dmenu_panel* panel);
@@ -129,6 +130,34 @@ void keypress(struct dmenu_panel *panel, enum wl_keyboard_key_state state,
 		case XKB_KEY_a:
 			sym = XKB_KEY_Home;
 			break;
+            
+        case XKB_KEY_v:{
+               char* texts = get_clipboard_text();
+               if (texts) {
+                   size_t len_texts = strlen(texts);
+                   size_t current_len = strlen(text_);
+
+                   // Check if there's room to append
+                   if (current_len + len_texts < BUFSIZ) {
+                       // Append to both text and text_
+                       strncat(text, texts, BUFSIZ - current_len - 1);
+                       strncat(text_, texts, BUFSIZ - current_len - 1);
+                   } else {
+                       fprintf(stderr, "⚠️ Not enough space in buffer to append full clipboard text. Truncating.\n");
+
+                       // Append as much as we can
+                       size_t space_left = BUFSIZ - current_len - 1;
+                       strncat(text, texts, space_left);
+                       strncat(text_, texts, space_left);
+                   }
+
+                   // Update cursor to the new end of the text
+                   cursor = strlen(text_);
+
+                   free(texts);
+               }
+           }
+        break;
 		case XKB_KEY_e:
 			sym = XKB_KEY_End;
 			break;
@@ -688,4 +717,36 @@ void truncate_and_ellipsis(const char *input, char *output, size_t max_len) {
         output[max_len - 4] = '\0';            // null-terminate
         strcat(output, "...");
     }
+}
+
+char *get_clipboard_text(void) {
+    FILE *fp = popen("wl-paste --no-newline", "r");
+    if (!fp) {
+        perror("popen failed");
+        return NULL;
+    }
+
+    // Allocate buffer
+    size_t bufsize = 8192;
+    char *buffer = malloc(bufsize);
+    if (!buffer) {
+        perror("malloc failed");
+        pclose(fp);
+        return NULL;
+    }
+
+    size_t len = 0;
+    int c;
+
+    // Read from pipe until EOF or buffer full
+    while ((c = fgetc(fp)) != EOF && len < bufsize - 1) {
+        buffer[len++] = (char)c;
+    }
+    buffer[len] = '\0';
+
+    pclose(fp);
+
+    // Optional: trim trailing newlines/spaces here if you want
+
+    return buffer;
 }
