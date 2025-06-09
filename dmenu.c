@@ -1,4 +1,4 @@
-/* See LICENSE file for copyright and license details. */
+/* Se&& count>0e LICENSE file for copyright and license details. */
 #include <bits/stdint-intn.h>
 #include <ctype.h>
 #include <stdbool.h>
@@ -195,24 +195,29 @@ void keypress(struct dmenu_panel *panel, enum wl_keyboard_key_state state,
 		dmenu_close(panel);
 		break;
 
-	case XKB_KEY_Left:
-	case XKB_KEY_Up:
-		if(cursor && (!sel || !sel->left)) {
-			cursor = nextrune(-1);
-		} if (sel && sel->left) {
+    case XKB_KEY_Up:
 			sel = sel->left;
-		}
 		break;
+	case XKB_KEY_Left:
+        if(cursor && (!sel || !sel->left)) {
+            cursor = nextrune(-1);
+        } if (sel && sel->left) {
+            for(int i=0;i<lines;i++) sel = sel->left;
+        }
+        break;
 
+    case XKB_KEY_Down:
+			sel = sel->right;
+		break;
 	case XKB_KEY_Right:
-	case XKB_KEY_Down:
 		if (cursor < len) {
 			cursor = nextrune(+1);
 		} else if (cursor == len) {
-			if (sel && sel->right) sel = sel->right;
+            if (sel && sel->right){
+             for(int i=0;i<lines;i++) sel = sel->right;
+            }
 		}
-		break;
-
+        break;
 	case XKB_KEY_End:
 		if(cursor < len) {
 			cursor = len;
@@ -305,6 +310,7 @@ void draw(cairo_t *cairo, int32_t width, int32_t height, int32_t scale) {
 	int32_t y = 0;
 	int32_t bin;
 
+    int prompt_width;
 	int32_t item_padding = 10;
 	int32_t text_width, text_height;
 
@@ -319,6 +325,8 @@ void draw(cairo_t *cairo, int32_t width, int32_t height, int32_t scale) {
 	if (prompt) {
 		draw_text(cairo, width, line_height, prompt, &x, &y, 
 				&x, &bin, scale, color_prompt_fg, color_prompt_bg, 6);
+        prompt_width = x;
+
 		window_config.input_field = x;
 	} else {
 		window_config.input_field = 0;
@@ -363,8 +371,11 @@ void draw(cairo_t *cairo, int32_t width, int32_t height, int32_t scale) {
 
 	if (!matches) return;
 	Item *item;
-    int max_len = (grid_width - ((gridn == 1) ? 100 : 0)) / (text_width / 2) ;
-	for (item = matches; item; item = item->right) {
+    int gw = (width - prompt_width) / gridn;
+    int max_len = (gw - (item_padding * 2) - ((gridn == 1) ? 100 : 0)) / (text_width / 2) ; // TODO
+
+    int i;
+	for (item = matches,i=0; item; item = item->right,i++) {
 		uint32_t bg_color = sel == item ? color_selected_bg : color_bg;
 		uint32_t fg_color = sel == item ? color_selected_fg : color_fg;
 
@@ -374,14 +385,22 @@ void draw(cairo_t *cairo, int32_t width, int32_t height, int32_t scale) {
 			draw_text(cairo, width - 20 * scale, line_height, item->text,
 						  &x, &y, &x, &bin, scale, fg_color, bg_color, item_padding);
 		} else {
-
             int w, h;
             get_text_size(cairo, "Sans Bold 12", &w, &h, NULL, 1.0, false, item->text);
                 char newtext[max_len];
-                truncate_and_ellipsis(item->text,newtext,max_len - 2);
+                truncate_and_ellipsis(item->text,newtext,max_len - 1);
+            if(gridn>1){
+                y+=line_height;
+                if((i%lines) == 0 && i>0) x+=gw;
+                if((i%lines) == 0) y=line_height;
+                draw_text(cairo, width * scale, line_height,newtext, 
+                        &x, &y, &bin, &bin, scale, fg_color, bg_color, item_padding);
+            }else{
+                draw_text(cairo, width * scale, line_height,newtext, 
+                        &x, &y, &bin, &y, scale, fg_color, bg_color, item_padding);
+            }
 
-			draw_text(cairo, width * scale, line_height,newtext, 
-						  &x, &y, &bin, &y, scale, fg_color, bg_color, item_padding);
+
 		}
 	}
 
