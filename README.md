@@ -3,7 +3,10 @@ its a little buggy I am still working on it but its better than other dmenu-wl f
 
 ## TODO
 Missing dmenu (for X) features:
-- [-] grids -g  
+- [x] lines -l 
+- [x] grids -g  
+- [x] password Prompt -P
+- [x] paste function ctrl +v uses wl-root
 
 Other TODO items:
 - Cleaner exiting
@@ -23,6 +26,7 @@ Required libraries (and headers):
 - xkbcommon
 - glib-2.0
 - gobject-2.0
+- wl-root
 
 
 ## Installation
