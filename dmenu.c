@@ -91,6 +91,8 @@ static Item *prev, *curr, *next;
 static Item *leftmost, *rightmost;
 static char *font = "Hack 11";
 static int font_size = 14;  // default size in pt (adjust as needed)
+int noOfMatch = 0;
+int currentposition = 0;
 
 
 
@@ -196,25 +198,37 @@ void keypress(struct dmenu_panel *panel, enum wl_keyboard_key_state state,
 		break;
 
     case XKB_KEY_Up:
+        if((currentposition -1) >= 0){
+            currentposition--;
 			sel = sel->left;
+        }
 		break;
 	case XKB_KEY_Left:
         if(cursor && (!sel || !sel->left)) {
             cursor = nextrune(-1);
-        } if (sel && sel->left) {
-            for(int i=0;i<lines;i++) sel = sel->left;
+        } if (sel && sel->left && (currentposition - lines)>=0) {
+            for(int i=0;i<lines;i++){
+             sel = sel->left;
+             currentposition--;
+            }
         }
         break;
 
     case XKB_KEY_Down:
+            if((currentposition + 1)<=noOfMatch && (currentposition + 1 )<(lines*gridn)){
+            currentposition++;
 			sel = sel->right;
+            }
 		break;
 	case XKB_KEY_Right:
 		if (cursor < len) {
 			cursor = nextrune(+1);
 		} else if (cursor == len) {
-            if (sel && sel->right){
-             for(int i=0;i<lines;i++) sel = sel->right;
+            if (sel && sel->right && (currentposition+lines)<=noOfMatch && (currentposition + lines) < (lines* gridn)){
+             for(int i=0;i<lines;i++) {
+                 sel = sel->right;
+                 currentposition++;
+             }
             }
 		}
         break;
@@ -365,17 +379,19 @@ void draw(cairo_t *cairo, int32_t width, int32_t height, int32_t scale) {
 	if (!lines) {
 		x += 320 * scale;
 	}
-
 	/* Scroll indicator will be drawn later if required. */
 	int32_t scroll_indicator_pos = x;
 
-	if (!matches) return;
+	if (!matches){
+        noOfMatch = 0;
+        return ;
+    } 
 	Item *item;
     int gw = (width - prompt_width) / gridn;
     int max_len = (gw - (item_padding * 2) - ((gridn == 1) ? 100 : 0)) / (text_width / 2) ; // TODO
 
-    int i;
-	for (item = matches,i=0; item; item = item->right,i++) {
+    int i = 0;
+	for (item = matches; item; item = item->right){
 		uint32_t bg_color = sel == item ? color_selected_bg : color_bg;
 		uint32_t fg_color = sel == item ? color_selected_fg : color_fg;
 
@@ -402,7 +418,10 @@ void draw(cairo_t *cairo, int32_t width, int32_t height, int32_t scale) {
 
 
 		}
+        i++;
 	}
+    noOfMatch = (i -1);
+
 
 	if (leftmost != matches) {
 		cairo_move_to(cairo, scroll_indicator_pos, text_y);
